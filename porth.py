@@ -1606,11 +1606,12 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                 pre_do_ip = program[do_ip].operand
                 assert isinstance(pre_do_ip, OpAddr)
                 if program[pre_do_ip].typ == OpType.IF:
+                    program[ip].operand = pre_do_ip
                     program[do_ip].operand = ip + 1
                     stack.append(ip)
                     ip += 1
                 elif program[pre_do_ip].typ == OpType.ELIF:
-                    program[pre_do_ip].operand = ip
+                    program[ip].operand = pre_do_ip
                     program[do_ip].operand = ip + 1
                     stack.append(ip)
                     ip += 1
@@ -1626,11 +1627,12 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                 pre_do_ip = program[do_ip].operand
                 assert isinstance(pre_do_ip, OpAddr)
                 if program[pre_do_ip].typ == OpType.IF:
+                    program[ip].operand = pre_do_ip
                     program[do_ip].operand = ip + 1
                     stack.append(ip)
                     ip += 1
                 elif program[pre_do_ip].typ == OpType.ELIF:
-                    program[pre_do_ip].operand = ip
+                    program[ip].operand = pre_do_ip
                     program[do_ip].operand = ip + 1
                     stack.append(ip)
                     ip += 1
@@ -1641,8 +1643,15 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                 program.append(Op(typ=OpType.END, token=token))
                 block_ip = stack.pop()
                 if program[block_ip].typ == OpType.ELSE:
+                    prev_block_ip = program[block_ip].operand
                     program[block_ip].operand = ip
+                    while program[prev_block_ip].typ == OpType.ELIF:
+                        temp = program[prev_block_ip].operand
+                        program[prev_block_ip].operand = ip
+                        prev_block_ip = temp
+                    assert program[prev_block_ip].typ == OpType.IF
                     program[ip].operand = ip + 1
+
                 elif program[block_ip].typ == OpType.DO:
                     assert program[block_ip].operand is not None
                     pre_do_ip = program[block_ip].operand
